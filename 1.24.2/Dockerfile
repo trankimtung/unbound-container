@@ -62,6 +62,11 @@ RUN chmod +x /entrypoint.sh
 
 ENV PATH=/opt/unbound/sbin:"$PATH"
 
+LABEL org.opencontainers.image.version="1.24.2" \
+      org.opencontainers.image.description="Unbound is a validating, recursive, and caching DNS resolver." \
+      org.opencontainers.image.licenses="BSD-3-Clause" \
+      org.opencontainers.image.source="https://github.com/trankimtung/unbound-container"
+
 EXPOSE 53/tcp 53/udp
 
 ENTRYPOINT ["/entrypoint.sh"]
