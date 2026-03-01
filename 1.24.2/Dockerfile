@@ -46,6 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libevent-2.1-7 \
         libnghttp2-14 \
         libprotobuf-c1 \
+        ldnsutils \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -g 1000 unbound \
