@@ -27,7 +27,6 @@ RUN curl -fL -o unbound.tar.gz ${UNBOUND_DOWNLOAD_URL} \
     && cd unbound-${UNBOUND_VERSION} \
     && groupadd -r -g 1000 unbound \
     && useradd -r -u 1000 -g unbound -s /usr/sbin/nologin unbound \
-    && ./configure -h \
     && ./configure \
         --prefix=/opt/unbound \
         --with-username=unbound \
