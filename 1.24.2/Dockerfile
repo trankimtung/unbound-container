@@ -25,8 +25,6 @@ RUN curl -fL -o unbound.tar.gz ${UNBOUND_DOWNLOAD_URL} \
     && echo "${UNBOUND_SHA256}  unbound.tar.gz" | sha256sum -c - \
     && tar -xzf unbound.tar.gz \
     && cd unbound-${UNBOUND_VERSION} \
-    && groupadd -r -g 1000 unbound \
-    && useradd -r -u 1000 -g unbound -s /usr/sbin/nologin unbound \
     && ./configure \
         --prefix=/opt/unbound \
         --with-username=unbound \
@@ -50,8 +48,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libprotobuf-c1 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -r -g 1000 unbound \
-    && useradd -r -u 1000 -g unbound -s /usr/sbin/nologin unbound
+RUN groupadd -g 1000 unbound \
+    && useradd -u 1000 -g unbound -s /usr/sbin/nologin unbound
 
 RUN mkdir -p /opt/unbound
 
