@@ -1,5 +1,7 @@
 # unbound-container
 
+[![Build and Push](https://github.com/trankimtung/unbound-container/actions/workflows/build.yml/badge.svg)](https://github.com/trankimtung/unbound-container/actions/workflows/build.yml)
+
 A minimal container image for [Unbound](https://nlnetlabs.nl/projects/unbound/), a validating, recursive, caching DNS resolver.
 
 Unbound is compiled from source with secure defaults suitable for use as a private DNS resolver in home labs and self-hosted infrastructure.
@@ -11,6 +13,7 @@ Unbound is compiled from source with secure defaults suitable for use as a priva
 - **DNSSEC validation** — validates DNSSEC signatures.
 - **Private network access control** — only allows queries from RFC 1918 / RFC 4193 private ranges.
 - **Multi-arch** — `linux/amd64` and `linux/arm64`
+- **Customizable DNS port** — configure the listening port with `UNBOUND_PORT` environment variable.
 
 ## Images
 
@@ -54,6 +57,12 @@ services:
       - "53:53/udp"
       - "53:53/tcp"
 ```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `UNBOUND_PORT` | `53` | Port unbound listens on |
 
 ## Access Control
 
