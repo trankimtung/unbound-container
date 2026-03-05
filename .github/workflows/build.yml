@@ -75,8 +75,6 @@ jobs:
           platforms: linux/amd64
           load: true
           tags: unbound-test:${{ matrix.version }}
-          cache-from: type=gha,scope=${{ matrix.version }}
-          cache-to: type=gha,scope=${{ matrix.version }},mode=max
 
       - name: Test image
         run: |
