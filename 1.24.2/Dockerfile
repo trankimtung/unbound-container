@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libnghttp2-dev \
         libprotobuf-c-dev \
         protobuf-c-compiler \
+        libsodium-dev \
         bison \
         flex \
         autoconf \
@@ -27,12 +28,22 @@ RUN curl -fL -o unbound.tar.gz ${UNBOUND_DOWNLOAD_URL} \
     && cd unbound-${UNBOUND_VERSION} \
     && ./configure \
         --prefix=/opt/unbound \
-        --with-username=unbound \
+        --with-username=_unbound \
         --with-libevent \
         --with-ssl \
         --with-pthreads \
+        --without-pyunbound \
+        --without-pythonmodule \
         --enable-subnet \
         --enable-dnstap \
+        --enable-dnscrypt \
+        --enable-cachedb \
+        --enable-ipsecmod \
+        --enable-event-api \
+        --enable-tfo-server \
+        --enable-tfo-client \
+        --enable-relro-now \
+        --enable-year2038 \
     && make -j$(nproc) \
     && make install \
     && mv /opt/unbound/etc/unbound/unbound.conf /opt/unbound/etc/unbound/unbound.conf.example
@@ -46,20 +57,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libevent-2.1-7 \
         libnghttp2-14 \
         libprotobuf-c1 \
+        libsodium23 \
         ldnsutils \
+        gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -g 1000 unbound \
-    && useradd -u 1000 -g unbound -s /usr/sbin/nologin unbound
+ENV UNBOUND_PUID=1000 \
+    UNBOUND_GUID=1000 \
+    UNBOUND_PORT=53
 
-RUN mkdir -p /opt/unbound
+RUN groupadd -g ${UNBOUND_GUID} _unbound \
+    && useradd -u ${UNBOUND_PUID} -g _unbound -s /usr/sbin/nologin _unbound
 
 COPY --from=unbound-build /opt/unbound /opt/unbound
-RUN echo /opt/unbound/lib > /etc/ld.so.conf.d/unbound.conf && ldconfig
 
-COPY unbound.conf /opt/unbound/etc/unbound/unbound.conf
+RUN mkdir -p /opt/unbound/etc/unbound/var \
+    && chown -R _unbound:_unbound /opt/unbound/etc/unbound/var \
+    && echo /opt/unbound/lib > /etc/ld.so.conf.d/unbound.conf \
+    && ldconfig
+
+COPY unbound.conf /opt/unbound/etc/unbound/unbound.conf.template
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
 ENV PATH=/opt/unbound/sbin:"$PATH"
 
