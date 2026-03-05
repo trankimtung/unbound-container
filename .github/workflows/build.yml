@@ -68,6 +68,41 @@ jobs:
             type=raw,value=${{ matrix.version }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' && matrix.version == needs.discover.outputs.latest }}
 
+      - name: Build test image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.version }}
+          platforms: linux/amd64
+          load: true
+          tags: unbound-test:${{ matrix.version }}
+          cache-from: type=gha,scope=${{ matrix.version }}
+          cache-to: type=gha,scope=${{ matrix.version }},mode=max
+
+      - name: Test image
+        run: |
+          docker run -d --name unbound-test -p 5353:53/udp unbound-test:${{ matrix.version }}
+
+          echo "Waiting for unbound to be ready..."
+          for i in $(seq 1 15); do
+            if dig @127.0.0.1 -p 5353 google.com A +short +time=2 > /dev/null 2>&1; then
+              echo "Unbound is ready after ${i} attempt(s)"
+              break
+            fi
+            if [ "$i" -eq 15 ]; then
+              echo "Unbound failed to become ready"
+              docker logs unbound-test
+              exit 1
+            fi
+            sleep 2
+          done
+
+          echo "Testing DNS resolution..."
+          dig @127.0.0.1 -p 5353 google.com A +noall +answer
+          dig @127.0.0.1 -p 5353 google.com AAAA +noall +answer
+
+          docker stop unbound-test
+          docker rm unbound-test
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
