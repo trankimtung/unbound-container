@@ -78,11 +78,11 @@ jobs:
 
       - name: Test image
         run: |
-          docker run -d --name unbound-test -p 5353:53/udp unbound-test:${{ matrix.version }}
+          docker run -d --name unbound-test -p 5335:5335/udp unbound-test:${{ matrix.version }}
 
           echo "Waiting for unbound to be ready..."
           for i in $(seq 1 15); do
-            if dig @127.0.0.1 -p 5353 google.com A +short +time=2 > /dev/null 2>&1; then
+            if dig @127.0.0.1 -p 5335 google.com A +short +time=2 > /dev/null 2>&1; then
               echo "Unbound is ready after ${i} attempt(s)"
               break
             fi
@@ -95,8 +95,8 @@ jobs:
           done
 
           echo "Testing DNS resolution..."
-          dig @127.0.0.1 -p 5353 google.com A +noall +answer
-          dig @127.0.0.1 -p 5353 google.com AAAA +noall +answer
+          dig @127.0.0.1 -p 5335 google.com A +noall +answer
+          dig @127.0.0.1 -p 5335 google.com AAAA +noall +answer
 
           docker stop unbound-test
           docker rm unbound-test

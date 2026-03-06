@@ -1,4 +1,4 @@
-FROM debian:trixie AS unbound-build
+FROM debian:trixie-slim AS unbound-build
 
 ARG UNBOUND_VERSION=1.24.2
 ARG UNBOUND_SHA256=44e7b53e008a6dcaec03032769a212b46ab5c23c105284aa05a4f3af78e59cdb
@@ -48,7 +48,7 @@ RUN curl -fL -o unbound.tar.gz ${UNBOUND_DOWNLOAD_URL} \
     && make install \
     && mv /opt/unbound/etc/unbound/unbound.conf /opt/unbound/etc/unbound/unbound.conf.example
 
-FROM debian:trixie-slim
+FROM debian:trixie-slim AS lib-provider
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -59,33 +59,57 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libprotobuf-c1 \
         libsodium23 \
         ldnsutils \
-        gettext-base \
     && rm -rf /var/lib/apt/lists/*
-
-ENV UNBOUND_PUID=1000 \
-    UNBOUND_GUID=1000 \
-    UNBOUND_PORT=53
-
-RUN groupadd -g ${UNBOUND_GUID} _unbound \
-    && useradd -u ${UNBOUND_PUID} -g _unbound -s /usr/sbin/nologin _unbound
 
 COPY --from=unbound-build /opt/unbound /opt/unbound
 
-RUN mkdir -p /opt/unbound/etc/unbound/var \
-    && chown -R _unbound:_unbound /opt/unbound/etc/unbound/var \
-    && echo /opt/unbound/lib > /etc/ld.so.conf.d/unbound.conf \
-    && ldconfig
+RUN groupadd -g 1000 _unbound \
+    && useradd -u 1000 -g _unbound -s /usr/sbin/nologin -M _unbound \
+    && mkdir -p /opt/unbound/etc/unbound/var \
+    && chown -R _unbound:_unbound /opt/unbound/etc/unbound
 
+# Collect required .so files into a flat directory, dereferencing symlinks.
+RUN mkdir -p /runtime-libs \
+    && find /usr/lib -maxdepth 2 \( \
+        -name "libssl.so*" \
+        -o -name "libcrypto.so*" \
+        -o -name "libexpat.so*" \
+        -o -name "libevent-2.1.so*" \
+        -o -name "libnghttp2.so*" \
+        -o -name "libprotobuf-c.so*" \
+        -o -name "libsodium.so*" \
+        -o -name "libldns.so*" \
+    \) -exec cp -L {} /runtime-libs/ \;
+
+FROM golang:1.25-trixie AS entrypoint-build
+
+WORKDIR /build
+COPY entrypoint/go.mod ./
+COPY entrypoint/main.go ./
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /entrypoint .
+
+FROM gcr.io/distroless/base-debian13
+
+COPY --from=lib-provider /runtime-libs /usr/local/lib
+COPY --from=lib-provider /etc/ssl/certs /etc/ssl/certs
+COPY --from=lib-provider /etc/passwd /etc/passwd
+COPY --from=lib-provider /etc/group /etc/group
+COPY --from=lib-provider /opt/unbound /opt/unbound
+COPY --from=entrypoint-build /entrypoint /entrypoint
+COPY --from=lib-provider /usr/bin/drill /usr/bin/drill
 COPY unbound.conf /opt/unbound/etc/unbound/unbound.conf.template
-COPY entrypoint.sh /entrypoint.sh
 
-ENV PATH=/opt/unbound/sbin:"$PATH"
+ENV PATH=/opt/unbound/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    LD_LIBRARY_PATH=/usr/local/lib:/opt/unbound/lib \
+    UNBOUND_PORT=5335
+
+USER _unbound
 
 LABEL org.opencontainers.image.version="1.24.2" \
       org.opencontainers.image.description="Unbound is a validating, recursive, and caching DNS resolver." \
       org.opencontainers.image.licenses="BSD-3-Clause" \
       org.opencontainers.image.source="https://github.com/trankimtung/unbound-container"
 
-EXPOSE 53/tcp 53/udp
+EXPOSE 5335/tcp 5335/udp
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint"]

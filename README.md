@@ -8,12 +8,14 @@ Unbound is compiled from source with secure defaults suitable for use as a priva
 
 ## Features
 
-- **Dual stack** — supports both IPv4 and IPv6, UDP and TCP
-- **Recursive resolution** — recursively resolves queries from the root servers.
-- **DNSSEC validation** — validates DNSSEC signatures.
-- **Private network access control** — only allows queries from RFC 1918 / RFC 4193 private ranges.
-- **Multi-arch** — `linux/amd64` and `linux/arm64`
-- **Customizable DNS port** — configure the listening port with `UNBOUND_PORT` environment variable.
+Out of the box, this Unbound container will:
+
+- Run as non-root.
+- Listen on UDP and TCP port 5335.
+- Act as a recursive resolver with caching.
+- Validate DNSSEC signatures.
+- Only allow queries from RFC 1918 / RFC 4193 private ranges.
+- Supported architectures: `amd64`, `arm64`.
 
 ## Images
 
@@ -33,8 +35,8 @@ ghcr.io/trankimtung/unbound-container
 ```sh
 docker run -d \
   --name unbound \
-  -p 53:53/udp \
-  -p 53:53/tcp \
+  -p 5335:5335/udp \
+  -p 5335:5335/tcp \
   ghcr.io/trankimtung/unbound-container:latest
 ```
 
@@ -62,7 +64,7 @@ services:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `UNBOUND_PORT` | `53` | Port unbound listens on |
+| `UNBOUND_PORT` | `5335` | Port unbound listens on |
 
 ## Access Control
 
@@ -80,13 +82,13 @@ All other sources are refused. If your host or container network uses a differen
 
 ## Custom Configuration
 
-Mount a custom configuration file to override the defaults:
+To use a custom Unbound configuration, mount your `unbound.conf` to `/opt/unbound/etc/unbound/unbound.conf` in the container:
 
 ```sh
 docker run -d \
   --name unbound \
-  -p 53:53/udp \
-  -p 53:53/tcp \
+  -p 5335:5335/udp \
+  -p 5335:5335/tcp \
   -v /path/to/your/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro \
   ghcr.io/trankimtung/unbound-container:latest
 ```
