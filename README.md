@@ -28,6 +28,7 @@ ghcr.io/trankimtung/unbound-container
 | Tag | Description |
 |-----|-------------|
 | `latest` | Latest stable version |
+| `1.26.1` | Unbound 1.26.1 |
 | `1.24.2` | Unbound 1.24.2 |
 
 ## Quick Start
@@ -100,7 +101,7 @@ The example configuration from the Unbound build is available at `/opt/unbound/e
 Each Unbound version has its own directory. To build locally:
 
 ```sh
-docker build -t unbound:1.24.2 1.24.2/
+docker build -t unbound:1.26.1 1.26.1/
 ```
 
 Multi-arch build:
@@ -108,8 +109,8 @@ Multi-arch build:
 ```sh
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t unbound:1.24.2 \
-  1.24.2/
+  -t unbound:1.26.1 \
+  1.26.1/
 ```
 
 ## License
