@@ -81,7 +81,7 @@ RUN mkdir -p /runtime-libs \
         -o -name "libldns.so*" \
     \) -exec cp -L {} /runtime-libs/ \;
 
-FROM golang:1.25-trixie AS entrypoint-build
+FROM golang:1.27-trixie AS entrypoint-build
 
 WORKDIR /build
 COPY entrypoint/go.mod ./
